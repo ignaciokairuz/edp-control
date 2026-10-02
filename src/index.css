@@ -223,6 +223,7 @@ mark { color: var(--color-ink); background: var(--color-review-bg); padding: .12
 .contact-action { display: flex; align-items: center; gap: 24px; margin-block: 36px 24px; }
 .contact-action p { font-size: 23px; line-height: 1.3; }
 .contact-action span { display: block; margin-top: 8px; color: var(--color-muted); font-size: 13px; }
+.contact-mobile-footer { display: none; }
 .founder-area > .caption { font-size: 13px; margin-bottom: 12px; }
 .faq-item { border-bottom: 1px solid var(--color-line); }
 .faq-item h2 { font-size: 18px; }
@@ -395,6 +396,11 @@ mark { color: var(--color-ink); background: var(--color-review-bg); padding: .12
   .founder-area > p { font-size: 16px; line-height: 1.5; }
   .contact-action { margin-top: 32px; gap: 20px; }
   .contact-action p { font-size: 21px; }
+  .contact-action { display: none; }
+  .contact-mobile-footer { display: block; }
+  .contact-mobile-footer .screen-footer-row { justify-content: space-between; gap: 20px; }
+  .contact-mobile-footer p { margin: 0; font-size: 17px; line-height: 1.35; }
+  .contact-mobile-footer small { display: block; margin-top: 6px; font-size: 12px; color: var(--color-muted); }
   .founder-area > .caption { font-size: 12px; }
   .faq-screen { gap: 24px; }
   .faq-item h2 { font-size: 16px; }
