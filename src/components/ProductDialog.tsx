@@ -12,7 +12,7 @@ export function ProductDialog({ title, children, onClose, className = '' }: {
     const overflow = document.body.style.overflow
     dialog.showModal()
     document.body.style.overflow = 'hidden'
-    dialog.querySelector<HTMLElement>('h2')?.focus()
+    dialog.querySelector<HTMLElement>('h2')?.focus({ preventScroll: true })
     return () => {
       dialog.close()
       document.body.style.overflow = overflow
