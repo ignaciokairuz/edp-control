@@ -1,69 +1,30 @@
-# Design QA · simplificación radical
+# Prototype v2 — internal design QA
 
-Fecha: 2026-10-02. Resultado: **passed** para el alcance visual y funcional revisado. No quedan P0/P1/P2 observados. Es una revisión de diseño e implementación, no una prueba de comprensión con clientes ni una certificación de accesibilidad.
+final result: passed
 
-## Fuente de verdad y comparación
+- Source visual: ../deliverables/edp-redesign-phase1/concept-demo.png (1586 × 992).
+- Governing refinement: user's second-pass brief; simplify the selected difference, disclose evidence on demand.
+- Actual browser captures: /workspace/scratch/edp-prototype-desktop.jpg (1348 × 926), /workspace/scratch/edp-prototype-mobile.jpg (390 × 844).
+- Desktop CSS viewport: 1363 × 936. Mobile CSS viewport: 390 × 844; additional 320 × 844 check.
+- State: price selected, four pending, evidence closed. Both source and desktop implementation normalized to 900px width in ../qa-comparison.jpg.
+- Full-view comparison: preserved paper/copper/graphite, document-to-finding flow, product shell, selected rail. Source excerpt, arithmetic, long disclaimers and unaffected lines intentionally removed from primary comparison.
+- Focused comparison: 120 and 135 remain dominant; units appear once beneath each value; USD 225 is isolated from optional evidence. Mobile retains the same reading order.
 
-Fuente: brief del usuario «RADICAL SIMPLIFICATION PASS» y capturas de la web existente antes de editar. Esta tarea transforma la jerarquía; no pretende clonar la composición anterior.
+## Required surfaces
 
-Evidencia, en el workspace de la conversación `/workspace/scratch/89b9a964f8bc/`:
+- Typography: existing local IBM Plex Sans and Mono; large numeric values and distinct title hierarchy. Mobile document labels increased from 8 to 10px after initial capture.
+- Spacing: selected finding separated from four-item rail. Mobile rail reflows to 2 × 2; no horizontal overflow at 390 or 320px.
+- Tokens: paper #F4F1EB, surface #FFFEFA, ink #172126, copper #9A562C. Selection and review remain distinguishable by text and shape.
+- Assets: local fonts and existing Lucide icons; no stock photo. Hero visual is semantic frontend document-comparison UI, as explicitly requested instead of a raster.
+- Copy: fixture values and excerpts preserved; missing evidence and approval qualified to the received package. No invented pricing or service-level claim.
 
-- `01_EDP_Antes_Simplificacion.jpg`: hero previo, Chrome 1363 × 936.
-- `02_EDP_Producto_Antes.jpg`: producto anterior.
-- `03_EDP_Simplificado_Escritorio.jpg`: nuevo hero, mismo Chrome 1363 × 936, inicio y sin diálogo.
-- `04_EDP_Simplificado_Movil.jpg`: póster completo, iframe 390 × 844; scrollbar nativo deja 375 px de contenido.
-- `05_EDP_Fuente_Opcional.jpg`: fuente móvil de precio, hoja abierta, contexto visible.
-- `06_EDP_Contacto_Simple.jpg`: prueba, fotografía, contacto y WhatsApp.
+## Fixes and verification
 
-Las capturas anterior y nueva de escritorio se inspeccionaron juntas en la misma entrada de comparación. Las vistas móvil y fuente se inspeccionaron además por legibilidad y contención. El screenshot de fuente constituye el pase enfocado de evidencia; no se construyeron imágenes falsas del producto.
-
-También se comprobó el viewport 1440 × 900 con iframe real (1425 px de contenido por scrollbar), 768 × 1024 y 320 × 844. Los dos últimos usaron páginas QA temporales retiradas antes de publicar. Misma app, fuentes y assets; ninguna mutación de DOM para simular estados.
-
-## Comparación visual
-
-| Superficie | Resultado |
-|---|---|
-| Jerarquía | El precio concreto deja de ocupar el hero por defecto. Documentos → proceso → cuatro salidas explica el alcance antes de abrir un ejemplo. No hay tutorial obligatorio. |
-| Fuentes | IBM Plex Sans existente. Título de 64 px máximo en escritorio, 32 px móvil, 29 px en 320. Definición breve del EDP de 12 px; fuentes documentales de 19 px móvil. No truncamiento observado. |
-| Espaciado/layout | Tres etapas horizontales en escritorio, inputs 2 × 2 y etapas apiladas en móvil. Márgenes 24 px en 390, 20 px en 320. Las cuatro salidas y el aviso ficticio caben en 390 × 844. Sin superposiciones observadas. |
-| Responsive | Contenido sin desborde horizontal en 390, 768, 1440 y 320 tras corregir el ancho mínimo del body. Producto lateral en escritorio, hoja inferior bajo 700 px. |
-| Color/superficies | Papel #f3efe8, grafito #151a20, cobre #9a562c, texto secundario #5d6670. Sin gradientes, vidrios, ilustraciones AI o sombras decorativas. Documento y proceso mantienen un tratamiento industrial sobrio. |
-| Fotografía | Asset Pexels existente, nítido a su tamaño y con crop contextual. Está junto al comienzo de prueba, no sustituye la explicación. Crédito indica expresamente que no es nuestro equipo. No se inventa un retrato. |
-| Iconos | Lucide existente, stroke consistente, etiquetas visibles para inputs y estados. WhatsApp usa SVG oficial existente; es la excepción deliberada de icono sin label visual, con nombre accesible. |
-| Copy | Cuatro momentos, cero FAQ comercial, cero menú, cero agenda secundaria, cero claims de precio/ahorro medido/AI ejecutada. Cantidades y límites conservan el fixture. |
-| Atajos visuales | No hay arte CSS/SVG que suplante fotografías ni avatars ficticios. El producto es la UI interactiva real de esta demo; sus resultados son preparados y se declaran como tales. |
-
-## Hallazgos corregidos
-
-| Severidad | Evidencia/impacto | Corrección y verificación |
-|---|---|---|
-| P2 · navegación | El primer efecto desplazaba la página al hero y dejaba el encabezado fuera de la vista. | `CommercialPage`: el arranque sin hash conserva posición inicial; inicio explícito vuelve a top 0. Nueva captura 03 muestra encabezado completo; móvil 04 también. |
-| P2 · tipografía | La definición breve de EDP tenía 10 px en móvil y era demasiado pequeña para reconocer qué documento es. | `index.css`: 12 px, wrap natural. Captura 04 muestra «Trabajo + importe a cobrar» legible dentro del documento. |
-| P2 · responsive | En un viewport 320 con scrollbar, body min-width 320 producía scrollWidth 320 > clientWidth 305. | Se retiró el ancho mínimo global. Comprobación DOM posterior: 305 = 305; screenshot sin scrollbar horizontal. Hoja de respaldo sin desborde propio. |
-
-## Interacciones y accesibilidad revisadas
-
-- Cuatro hallazgos del póster abren sólo el ejemplo solicitado: precio 120/135 y diferencia 225; cantidad 128/112 y diferencia 16; respaldo ausente en el paquete; cambio en borrador y confirmación humana.
-- Precio abre Adenda 01 · pág. 1 · ítem 01, resaltando fecha y USD 135. Cantidad, respaldo y cambio conservan sus referencias del fixture.
-- Pestañas de respaldo: condición → paquete con ArrowRight; selección, tabpanel y foco actualizados. Cambio muestra solicitud en borrador y aprobación sin completar.
-- «Volver al ejemplo» devuelve foco a «Ver fuente». Tab desde el último control vuelve a Cerrar. Escape cierra y restaura foco al hallazgo invocador.
-- «Ver producto» lleva directamente al producto. Selección desktop cambia el panel lateral; tap móvil abre hoja. No se exige pasar por la demo para llegar al contacto.
-- «¿Cómo funciona?» revela sólo la honestidad de la simulación; privacidad abre/cierra con teclado y restaura foco.
-- WhatsApp conserva `wa.me`, mensaje editable sin datos sensibles, nombre «Escribir por WhatsApp», tooltip y marca oficial. 80 px desktop / 68 px móvil. Se inspeccionó el destino, sin enviar un mensaje de prueba.
-- Filas del póster ≥44 px, foco visible, estados con texto, lectura ordenada, fuente legible. CSS de reduced motion elimina toda animación y transición. No se hizo auditoría completa de lector de pantalla o zoom del navegador.
-- Consola revisada: los errores observados pertenecían a una extensión de Chrome; no se observaron errores del dominio de la app durante el flujo.
-
-## Validación técnica
-
-11 tests del caso, fuentes y navegación pasaron. Lint, TypeScript y build pasaron. `git diff --check` sin problemas. El deploy usa el workflow existente de GitHub Pages, con los mismos checks en CI.
-
-## Revisión comercial heurística
-
-| Momento | Evaluación | Razón |
-|---|---|---|
-| Entender | strong | Inputs, acción y salida nombrados y conectados en un visual; no depende de un párrafo. Falta medir comprensión en cinco segundos con personas. |
-| Ver el producto | strong | Una interfaz concreta con cuatro marcas y acceso a evidencia. Mantiene decisión humana y límites del paquete. |
-| Empezar | acceptable | Un EDP y tres mensajes reducen esfuerzo percibido. Precio y utilidad todavía no están validados. |
-| Contacto | strong | Una pregunta y un icono reconocido; acceso directo a Ignacio, sin formulario ni CTA competidor. Conversión aún no medida. |
-
-Siguiente prueba: mostrar cinco segundos a alguien nuevo y preguntar «¿Qué hace?». Éxito esperado: «Le doy el EDP y los papeles. Me muestra qué no cierra.» Registrar respuesta literal, no puntuar por gusto visual.
+- Initial modal lacked centered margins after reset. Added margin:auto; desktop bounds 720 × 510.5 centered at x321.5/y212.75; mobile bounds 352 × 522.75 centered at x19/y160.625.
+- Closing example after source reveal could expose the separate source modal. Clear both states on example close; verified zero open dialogs.
+- Initial fragment link did not scroll after React mount. Scroll to product after mount for product/demo/finding fragments; verified mobile reload.
+- Tested all four selections on desktop and mobile, each comparison, source open/close, source tabs, optional explanation/calculation, Escape, example reveal/close, 4→3 pending and undo to 4.
+- Tested three initially collapsed FAQ answers and additional-question disclosure/re-collapse.
+- Browser console inspected: no application warnings/errors; browser-extension metadata errors excluded.
+- Build, lint and all 11 existing fixture/source tests pass.
+- No actionable P0/P1/P2 issues remain. Production deployment is unchanged.
