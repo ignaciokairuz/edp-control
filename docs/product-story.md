@@ -1,38 +1,59 @@
-# Síntesis implementada · EDP Control
+# Simplificación implementada · EDP Control
 
-2 de octubre de 2026. Diseño final del handoff: B → C con contención A, hero de producto dominante y fotografía de contexto. No se incorporan las otras dos exploraciones de hero al recorrido comercial.
+2 de octubre de 2026. Una página tipo póster, sin otra dirección visual ni recorrido obligatorio.
 
-## Estados
+## Cuatro momentos y copy
 
-| URL | Estado y salida principal |
+| Momento | Copy y contenido visible |
 |---|---|
-| `#inicio` | Promesa, comparación breve y foto. Ver cómo funciona; atajo experto. |
-| `#como-funciona` | Definición de EDP y documento del caso. Siguiente. |
-| `#fuentes` | Orden, adenda y respaldos. Comparar. |
-| `#comparacion` | 120 ≠ 135; USD 225 para revisar. Abrir fuente. |
-| `#fuente` | Hoja de Adenda 01; cerrar vuelve a comparación. Ver el producto. |
-| `#demo` | Ocho líneas, cuatro para revisar; paquete y controles restantes disponibles. |
-| `#precio`, `#cantidad`, `#respaldo`, `#adicional` | Detalle EDP ↔ fuente. Abrir evidencia; regresar a lista. |
-| `#resumen` | Encontrá / Entendé / Decidí. Probar con un EDP. |
-| `#probar` | Fundador, contexto real, icono oficial WhatsApp y agenda secundaria. |
-| `#preguntas` | Ocho preguntas, una respuesta abierta por vez. |
+| Entender · `#inicio` | «Para contratistas mineros». «Encontramos lo que no cierra antes de que lo mandes.» Le das: Estado de Pago — Trabajo + importe a cobrar; Contrato / Orden; Adendas; Respaldos. EDP Control — Revisa y compara. Recibís: 4 cosas para mirar — Precio distinto; Cantidad distinta; Falta respaldo; Cambio para confirmar. «Caso ficticio. Tu equipo decide.» |
+| Ver el producto · `#producto` | «Así lo ves.» EDP Agosto 2026, 8 líneas · 4 para mirar. Cuatro filas y una comparación. Las otras cuatro líneas están agrupadas en una revelación opcional. |
+| Empezar · `#probar` | «Empezamos con un EDP.» «Si realmente te ahorra trabajo, seguimos.» No reemplaza tu ERP para probarlo. Partimos de tus archivos y controles. Tu equipo sigue tomando la decisión. Una fotografía acreditada de contexto. |
+| Contacto · `#contacto` | «¿Querés ver si sirve para tu proceso?» «Lo vemos con Ignacio Kairuz.» Icono oficial WhatsApp, sin otro CTA de venta. |
 
-Menú, paquete, controles restantes y fuente son diálogos, no nuevas propuestas. Los documentos y los hallazgos están preparados. Abrirlos no modifica ni resuelve el EDP.
+El encabezado sólo tiene la marca y «Ver producto». Se retiraron menú, tutorial de cinco pasos, resumen adicional, FAQ comercial y agenda secundaria. La privacidad sigue disponible en el pie.
 
-## Responsive e interacción
+## Ejemplos opcionales
 
-Móvil: una columna, margen 24 px (20 a 320), comparación apilada, filas sin tabla horizontal, hojas completas. Escritorio: explicación y documento en paralelo; a 1280 px la comparación 120/135 se presenta lado a lado. Panel de fuente de hasta 680 px, lectura legible y cierre persistente.
+| Hallazgo | Comparación | Límite / siguiente paso humano |
+|---|---|---|
+| Precio distinto | EDP USD 120 por día · 15 días ↔ Adenda 01 USD 135 por día · desde 01/08 | USD 225 para revisar en 15 días. |
+| Cantidad distinta | EDP 128 m³ ↔ Acta de avance 112 m³ | Hay 16 m³ para revisar. |
+| Falta respaldo | Informe + fotos ↔ Acta de aceptación requerida | No aparece el acta requerida en este paquete. |
+| Cambio para confirmar | 2 turnos adicionales ↔ Solicitud de cambio en borrador | No encontramos una modificación aprobada en los archivos disponibles. Confirmar con Contratos. |
 
-El icono WhatsApp tiene 64 px, 80 px en contacto, nombre accesible “Escribir por WhatsApp”. Se reserva su espacio en el extremo derecho del footer, incluyendo safe area. No aparece en la historia ni mientras hay un panel abierto. En producto/FAQ aparece después de ver un hallazgo o una fuente; también está disponible al elegir contacto. Esta regla de presentación no mide comprensión.
+Todos ofrecen «Ver fuente». La fuente muestra documento, página/ítem/cláusula, texto resaltado y motivo. «Vos revisás. Tu equipo decide.» permanece junto al hallazgo. Respaldo y cambio tienen pestañas de documentos/condición/paquete. «Volver al ejemplo» devuelve el foco a «Ver fuente»; Cerrar o Escape devuelve el foco al activador original.
 
-Los hashes permiten Atrás/Adelante y recarga. Cambiar de pantalla enfoca el título. Los diálogos usan `showModal`, foco inicial, Tab/Shift+Tab contenido, Escape y restauración del invocador. Las pestañas usan flechas, Home/End, `aria-selected` y `tabpanel`. El FAQ usa `aria-expanded`/`aria-controls`. El lector y el formulario largo anteriores no forman parte de este recorrido.
+«¿Cómo funciona?» es una revelación pequeña bajo el producto: «Esta demo muestra comparaciones y fuentes preparadas de un caso ficticio. No recibe ni analiza tus archivos.» No se atribuye a IA un procesamiento que la demo no realiza.
 
-## Movimiento
+## Responsive
 
-Documento: 260 ms, cubic-bezier(.2,.8,.2,1), entrada de 16 px. Comparación: 240 ms ease-out, cifras visibles. Fuente: 240 ms, hoja desde abajo o panel desde derecha; revela evidencia. Cambio de pestaña: 120 ms de opacidad. FAQ: 160 ms. WhatsApp: 120 ms de opacidad una sola vez. No hay autoavance, parallax, scroll hijacking ni falsa barra de análisis. `prefers-reduced-motion: reduce` elimina animación y transición manteniendo todo el contenido.
+390 × 844 primero: margen 24 px, inputs en dos columnas con etiquetas, proceso central y flechas verticales, cuatro filas de salida de al menos 44 px. El póster completo entra en ese viewport. Sin tablas horizontales. La comparación de producto se abre en una hoja inferior a pedido; la fuente se lee con 19 px y puede desplazarse dentro de la hoja.
 
-## Comprobación
+Escritorio: inputs, proceso y salidas en tres columnas con flechas horizontales. Producto en dos columnas: lista y comparación EDP ↔ fuente. Los ejemplos opcionales abren un diálogo centrado de hasta 560 px. No se estira el móvil.
 
-Tests del fixture preservan montos, cantidades, referencias y límites. Tests de las fuentes verifican que cada cita exista en el paquete y que los resaltados pertenezcan al texto; se comprueba compatibilidad de rutas. TypeScript, lint y build son necesarios antes de publicar.
+WhatsApp: icono circular de 68 px en contacto móvil, 80 px en escritorio, `aria-label="Escribir por WhatsApp"`, tooltip «WhatsApp». En móvil, el flotante de 64 px sólo puede aparecer después de pasar el producto y antes de que el contacto esté visible; se oculta con un diálogo abierto y respeta safe area. Esta regla no afirma comprensión medida. Enlaces `wa.me` existentes con mensaje editable: «Hola Ignacio. Vi EDP Control y quiero ver si puede servir para nuestro proceso de Estados de Pago.»
 
-La revisión con usuarios sigue pendiente: prueba de cinco segundos, siguiente acción, diferencia encontrada, confianza en la fuente, archivos necesarios y último EDP corregido. No se presentan resultados comerciales o accesibilidad como medidos por un build.
+El slot del precio está en la prueba, junto a alcance y esfuerzo, pero permanece oculto. Sólo se activa cuando precio y alcance del piloto estén validados.
+
+## Movimiento y accesibilidad
+
+| Transición | Trigger | Duración / curva | Movimiento y propósito | Reduced motion |
+|---|---|---|---|---|
+| Abrir ejemplo/fuente en móvil | Tap en hallazgo o fuente | 180 ms, cubic-bezier(.2,.8,.2,1) | Hoja desde abajo: lleva el detalle al pulgar sin cambiar de página. | Aparición inmediata. |
+| Abrir diálogo en escritorio | Click/Enter en hallazgo o fuente | 160 ms ease-out | Revelado breve, sin recorrido narrativo. | Aparición inmediata. |
+| Cambiar fila, pestaña o volver al ejemplo | Click o teclado | Inmediato | Sólo cambia el contenido solicitado; no hay animación decorativa. | Igual. |
+| Ir al producto/inicio | Enlace | Inmediato | Ancla nativa; sin scroll hijacking. | Igual. |
+| Estado hover de WhatsApp | Puntero | 120 ms ease-out | Fondo del control indica interacción. | Inmediato. |
+
+`prefers-reduced-motion: reduce` elimina animaciones/transiciones. Orden de lectura lógico, iconos con etiquetas, estados con texto y foco visible. Diálogos nativos `showModal`, Escape, Tab/Shift+Tab contenido y retorno de foco. Pestañas con flechas/Home/End, roving tabindex y `tabpanel`. No se certifica conformidad WCAG a partir del build.
+
+## Inventario de implementación
+
+React: `CommercialPage`, `InputOutput`, `ProductView`, `CompactComparison`, `FindingSheet`, `ProductDialog`, `ContactLink`, privacidad existente. Tokens: papel cálido, superficie blanca, grafito, cobre, borde y estado revisión; IBM Plex Sans, escala existente simplificada. Assets: fotografía Pexels acreditada y marca oficial WhatsApp, existentes y licenciados. No se crea un retrato falso de Ignacio.
+
+Simulado: caso, líneas, diferencias, índices, fuentes y montos preparados. No se agregan uploads, análisis de documentos reales, aprobación o envío automático.
+
+## Próxima comprobación con personas
+
+Mostrar el póster cinco segundos y preguntar «¿Qué hace?». Después: «Mostrame qué harías ahora», «¿Qué encontró?», «¿Por qué creés ese hallazgo?», «¿Qué archivos le darías?» y «¿Qué tuviste que corregir en el último Estado de Pago?». Registrar palabras y acciones; no preguntar si les gusta ni presentar comprensión/conversión como validadas.

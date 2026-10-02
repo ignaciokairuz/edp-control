@@ -5,48 +5,49 @@ Publicado en https://ignaciokairuz.github.io/edp-control/
 
 ## Experiencia
 
-Historia guiada → comparación → fuente → producto → una conversación con Ignacio.
-La síntesis combina la progresión de B, la demostración de C y la contención de A.
+Una página, cuatro momentos: entender → ver el producto → empezar con un EDP → conversar.
 
-- Entrada nueva: **Ver cómo funciona**. Entrada experta: **Ya preparo Estados de Pago → ver el ejemplo**.
-- La guía explica trabajo, EDP, contrato/adenda/respaldos, USD 120 frente a USD 135 y la fuente. Se puede volver, salir o saltar al producto.
-- La mini aplicación muestra ocho líneas y cuatro hallazgos preparados. Cada detalle abre una hoja completa en móvil o un panel en escritorio.
-- Las fuentes de respaldo y adicional tienen pestañas para verificar documento, condición e índice. Cerrar/Escape restaura el foco al invocador.
-- WhatsApp utiliza la marca oficial y un mensaje editable sin datos sensibles. No se envían mensajes automáticamente. La agenda es secundaria.
-- Fotografía industrial real con crédito, usada como contexto. No representa clientes, el equipo ni a Ignacio. Falta un retrato autorizado del fundador; se usan sus iniciales.
+- El primer visual muestra Estado de Pago, contrato/orden, adendas y respaldos → EDP Control, «Revisa y compara» → cuatro cosas para mirar.
+- No hay recorrido obligatorio. Cada hallazgo abre un ejemplo breve y su fuente cuando se pide.
+- La mini aplicación muestra ocho líneas y cuatro hallazgos preparados. En escritorio la selección cambia la comparación lateral; en móvil abre una hoja pequeña.
+- La fuente conserva documento, página/cláusula y resaltado. Las pestañas de respaldo y adicional permiten comprobar también el índice. Cerrar/Escape devuelve el foco al invocador.
+- «Empezamos con un EDP» presenta tres garantías de alcance y una foto real de contexto. La foto no representa nuestro equipo, clientes ni al fundador.
+- El contacto principal es la marca oficial de WhatsApp con nombre accesible «Escribir por WhatsApp». El mensaje se prepara sin datos sensibles y no se envía automáticamente.
+- El espacio del precio piloto está reservado, oculto hasta contar con un precio y alcance validados. No hay precio inventado ni promesa de ahorro medido.
 
 ## Alcance
 
 `src/data/syntheticCase.ts` permanece como fixture ficticio. Las diferencias son **USD 225 para revisar**, **16 m³ para revisar**, un acta no encontrada **en el paquete** y una modificación aprobada no encontrada **en los archivos disponibles**. La persona decide qué corregir o consultar.
 
-No hay análisis de archivos reales, motor contractual, aprobación, corrección o envío del EDP. Las líneas restantes dicen “Sin diferencias en los controles mostrados”. La utilidad y conversión aún requieren pruebas con usuarios.
+La demo no recibe ni analiza archivos reales. No aprueba, corrige ni envía el EDP. Las cuatro líneas restantes se agrupan bajo «sin diferencias en estos controles». «¿Cómo funciona?» revela el alcance de la simulación cuando se solicita. La comprensión y utilidad comercial siguen pendientes de pruebas con usuarios.
 
-El lector local de columnas anterior se conserva en el código y sus pruebas, pero no forma parte del nuevo recorrido público ni se incluye en su bundle.
+El lector local y la historia anterior se conservan en el código donde aún sirven a pruebas y compatibilidad, pero no forman parte del recorrido público.
 
 ## Desarrollo
 
 ```bash
 npm ci
-npm run dev -- --host 127.0.0.1
+npm run dev
 npm test
 npm run lint
 npm run build
 ```
 
-React + TypeScript + Vite. Ruta base `/edp-control/`. Sin backend ni credenciales del ERP.
-La navegación usa hashes para que los enlaces funcionen al recargar en GitHub Pages. Se conservan las entradas antiguas `#demo`, `#probar`, `#preguntas`, `#top`, `#detecta` y `#lector`.
+React + TypeScript + Vite. Ruta base `/edp-control/`. Sin backend ni credenciales del ERP. El servidor de desarrollo admite `terminal.local` para la vista previa local.
+
+Los hashes permiten enlaces directos y recarga en GitHub Pages. `#demo` y `#detecta` llevan al producto; `#probar`, `#lector` y `#resumen`, al inicio de prueba. Los enlaces antiguos de hallazgos abren el ejemplo correspondiente; `#fuente` abre la adenda. Los enlaces a la explicación anterior regresan al póster.
 
 ## Código
 
-- `CommercialPage.tsx`: historia, producto, contacto, FAQ y menú.
-- `FindingComparison.tsx`: comparación y revisión humana; reutiliza el fixture existente.
-- `ProductDialog.tsx`: hoja/panel, foco contenido, Escape y retorno al activador.
-- `storySources.ts`: extractos obtenidos de los documentos del caso y vistas del índice.
-- `storyFaq.ts`: ocho preguntas con revelado progresivo.
-- `story.ts`: rutas y compatibilidad de enlaces.
-- `contact.ts` / `ContactLink.tsx`: datos de contacto existentes y enlaces sin envío automático.
-- `docs/ASSETS_LICENCIAS.md`: origen y derechos de fotografías, marca y tipografía.
-- `docs/product-story.md`: estados, responsive, movimiento y revisión.
+- `CommercialPage.tsx`: póster, producto, prueba, contacto y ejemplos opcionales.
+- `compactFindings.ts`: presentación breve de los cuatro hallazgos ficticios.
+- `ProductDialog.tsx`: diálogo/hoja, foco contenido, Escape y retorno al activador.
+- `storySources.ts` / `FindingComparison.tsx`: extractos del caso y resaltados.
+- `story.ts`: destinos actuales y compatibilidad de enlaces.
+- `contact.ts` / `ContactLink.tsx`: contacto existente y enlaces sin envío automático.
+- `docs/ASSETS_LICENCIAS.md`: origen y derechos de fotografía, marca y tipografía.
+- `docs/product-story.md`: copy, estados, responsive y movimiento.
+- `design-qa.md`: revisión visual y funcional de esta simplificación.
 
 ## Publicación
 

@@ -21,3 +21,11 @@ export function screenForHash(hash: string): Screen {
 export function isFinding(screen: Screen): screen is FindingScreen {
   return findingScreens.includes(screen as FindingScreen)
 }
+
+export function landingForHash(hash: string): { section: 'inicio' | 'producto' | 'probar' | 'contacto'; finding: FindingScreen | null; source: boolean } {
+  if (hash === '#contacto') return { section: 'contacto', finding: null, source: false }
+  if (hash === '#producto' || ['#demo', '#detecta'].includes(hash)) return { section: 'producto', finding: null, source: false }
+  if (['#probar', '#lector', '#resumen'].includes(hash)) return { section: 'probar', finding: null, source: false }
+  const old = screenForHash(hash)
+  return { section: 'inicio', finding: old === 'source' ? 'price' : isFinding(old) ? old : null, source: old === 'source' }
+}
