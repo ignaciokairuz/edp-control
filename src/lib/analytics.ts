@@ -1,4 +1,10 @@
 type EventName =
+  | 'finding_select'
+  | 'source_open'
+  | 'guide_start'
+  | 'guide_complete'
+  | 'pilot_contact_click'
+  | 'template_reader_open'
   | 'hero_demo_click'
   | 'demo_run'
   | 'exception_open'

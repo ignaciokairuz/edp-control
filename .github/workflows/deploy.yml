@@ -27,6 +27,8 @@ jobs:
           cache: npm
       - name: Install
         run: npm ci
+      - name: Verify
+        run: npm test && npm run lint
       - name: Build
         run: npm run build
       - name: Configure Pages

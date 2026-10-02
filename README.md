@@ -1,111 +1,53 @@
-# EDP Control — Kairuz Mining Systems
+# EDP Control · por Ignacio Kairuz
 
-Sitio de demo comercial para **EDP Control**: precontrol de Estados de Pago para contratistas mineros.
+Sitio comercial independiente para explicar una revisión de Estados de Pago antes del envío.
 
-No es una landing genérica. El centro del sitio es una demo operativa: un paquete sintético (EDP, contrato, adenda y evidencias) se contrasta y muestra excepciones con trazabilidad.
+Publicado en https://ignaciokairuz.github.io/edp-control/
 
-**Owner:** Ignacio Kairuz  
-**Producto:** Precontrol de Estados de Pago para contratistas mineros  
-**URL prevista:** https://ignaciokairuz.github.io/edp-control/
+## Qué funciona y qué se demuestra
 
-## Objetivo
+- El ejemplo permite explorar cuatro hallazgos preparados y sus fragmentos de fuente, o recorrer una guía de seis pasos.
+- El caso es completamente ficticio: ocho líneas, una orden de servicio, una adenda y respaldos. Está en `src/data/syntheticCase.ts`.
+- La web **no analiza esos PDF ni ejecuta un motor contractual general**. No aprueba EDP ni autoriza a facturar.
+- El lector opcional lee la primera hoja de un XLSX/CSV de hasta 5 MB, muestra columnas y diez filas de vista previa. No compara el contenido con contratos.
+- El lector funciona en el navegador, sin backend ni persistencia. No envía archivos. Quitar el archivo o cerrar el lector limpia esa vista.
+- Los enlaces de contacto preparan un borrador de WhatsApp/email, o abren la agenda existente. No envían mensajes ni adjuntan archivos automáticamente.
 
-Permitir que un Contract Manager, CFO o responsable de facturación entienda en menos de un minuto:
-
-1. qué problema se atiende;
-2. qué archivos usa el producto;
-3. qué chequeos hace;
-4. qué output genera;
-5. por qué eso puede reducir reenvíos;
-6. cómo se implementaría;
-7. qué hace falta para un piloto;
-8. cuál es el siguiente paso.
-
-La promesa no es aprobar un Estado de Pago. Es detectar inconsistencias **antes** de enviarlo.
-
-## Stack
-
-- React + TypeScript
-- Vite
-- Tailwind CSS
-- Lucide React
-- SheetJS (`xlsx`) para lectura local de XLSX/CSV
-
-Sin backend, Firebase, Supabase ni API keys. Todo corre como sitio estático.
-
-## Ejecutar en local
+## Desarrollo y verificación
 
 ```bash
-npm install
-npm run dev
-```
-
-El `base` de Vite es `/edp-control/`. En desarrollo el sitio queda en:
-
-`http://localhost:5173/edp-control/`
-
-## Build
-
-```bash
+npm ci
+npm run dev -- --host 127.0.0.1
+npm test
+npm run lint
 npm run build
-npm run preview
 ```
 
-El preview también usa `/edp-control/`.
-
-## Deploy en GitHub Pages
-
-1. Crear el repositorio `edp-control` en la cuenta de GitHub.
-2. Publicar esta rama como `main`.
-3. En el repositorio: **Settings → Pages → Source = GitHub Actions**.
-4. El workflow `.github/workflows/deploy.yml` hace checkout, `npm ci`, `npm run build` y publica `dist`.
-
-No usar `BrowserRouter`. Es una sola página con anclas.
+La ruta base es `/edp-control/`. React, TypeScript, Vite, Tailwind, Lucide y SheetJS. El lector se carga por separado; SheetJS se importa sólo al seleccionar una plantilla.
 
 ## Estructura
 
-```
-src/
-  data/demoEdp.ts      Caso sintético (28 líneas, 5 excepciones)
-  data/contact.ts      Email, WhatsApp, LinkedIn, agenda
-  lib/analytics.ts     trackEvent (console.debug / gtag si existe)
-  lib/parseSpreadsheet.ts
-  components/          Navbar, Hero, demo, implementación, formulario, etc.
-```
+- `src/components/CommercialPage.tsx`: navegación, hero, ejemplo, guía, recorrido, alcance, prueba, FAQ, fundador y metodología.
+- `src/components/FindingComparison.tsx`: comparación, fragmento relevante y revisión humana.
+- `src/components/TemplateMapper.tsx`: lector local de columnas.
+- `src/components/PrivacyModal.tsx` y `src/lib/privacy.ts`: diálogo nativo con foco contenido, Escape y retorno al activador.
+- `src/data/contact.ts`: contactos públicos existentes.
+- `src/data/syntheticCase.ts`: fixture ficticio y alcance de los controles.
+- `src/lib/analytics.ts`: hooks opcionales de eventos, sin proveedor instalado. Un clic no demuestra que se envió un mensaje ni valida demanda.
+- `tests/synthetic-case.test.mjs`: integridad de datos, cálculo de diferencias y límites del lector.
 
-## Cómo editar los datos sintéticos
+## Publicación
 
-El caso vive en `src/data/demoEdp.ts`.
+La rama `master` activa `.github/workflows/deploy.yml`. GitHub Actions instala dependencias, ejecuta tests y lint, construye y despliega `dist` en GitHub Pages. La publicación también contempla `main` si el repositorio cambia de rama.
 
-- `synthetic: true` debe permanecer.
-- Empresas, montos y cláusulas son ficticios: Andes Servicios Industriales S.A., Proyecto Cordillera Norte, Contrato OS-184.
-- No usar nombres reales de proveedores, CUIT reales ni contratos de operadoras.
+## Documentación real y primera prueba
 
-Para cambiar hallazgos, editá `exceptions` y el `flag` de `lines`. El resumen (`summary`) debe seguir coincidiendo: 28 revisadas, 23 OK, 3 corregibles, 2 a revisión.
+**Nunca reemplazar el fixture público por un contrato o EDP de un cliente.** La etiqueta `synthetic: true` no anonimiza datos ni protege la información incluida en un sitio público.
 
-## Cómo cambiar contactos
+La primera conversación puede usar una plantilla vacía o datos ficticios. Antes de recibir datos reales se acuerdan alcance, autorización, canal, personas con acceso, procesamiento, proveedores, plazo de eliminación, precio y duración. El trabajo real se realiza en un entorno privado acordado, en paralelo al circuito oficial.
 
-Editá `src/data/contact.ts`. El formulario de discovery construye el texto y abre WhatsApp o email con `encodeURIComponent`. No envía datos solo.
+La prueba debe medir esfuerzo neto de preparación/revisión, marcas útiles y erróneas, problemas no detectados y vueltas observadas. El sitio no publica ahorros, precisión, clientes ni resultados de piloto sin evidencia.
 
-## Privacidad
+## Referencias y límites
 
-Los archivos cargados en el mapeo de plantilla se leen **en el navegador**. No hay upload a servidor ni persistencia en `localStorage`. El botón **Eliminar archivo** limpia el estado de la sesión.
-
-## Alcance de la demo
-
-La demo ilustra un workflow plausible. No afirma que todas las empresas trabajen igual, ni que exista un gap en todos los ERP/portales. El piloto existe para medir si hay reglas específicas fuera del sistema actual y si automatizarlas vale el costo.
-
-## Cómo adaptar el primer EDP real
-
-La demo no intenta adivinar un contrato. Cuando llegue el primer paquete anonimizado:
-
-1. Reemplazar o ampliar `src/data/demoEdp.ts` con líneas, reglas y excepciones del caso real (mantener `synthetic: true` hasta que el cliente autorice otro tratamiento).
-2. Ajustar el mapeo de columnas en `src/lib/parseSpreadsheet.ts` si la plantilla usa encabezados distintos.
-3. Reconstruir sólo las cláusulas necesarias para precio, unidad, acumulado, vigencia de adendas y evidencia esperada.
-4. Correr el piloto en paralelo al circuito oficial y medir tiempo, observaciones preventibles y excepciones que siguen pidiendo una persona.
-
-## Disclaimer
-
-Proyecto independiente. No afiliado ni respaldado por ninguna operadora minera, plataforma de procurement u organismo público mencionado como referencia.
-
-Las plataformas empresariales pueden absorber partes de estos workflows. El objetivo del piloto es identificar qué validaciones específicas permanecen fuera del sistema existente y si automatizarlas genera valor suficiente.
+Las fuentes públicas de Vicuña describen revisión de EDP y cambios de presentación mediante Coupa. Debe confirmarse qué circuito aplica a cada contrato y qué trabajo queda fuera del sistema actual. Las referencias no son clientes ni endorsements. Si el proceso actual ya resuelve el trabajo, no se propone agregar una herramienta.
