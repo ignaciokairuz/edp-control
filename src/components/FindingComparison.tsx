@@ -5,10 +5,9 @@ import { trackEvent } from '../lib/analytics'
 const clauseForFinding: Record<string, string> = { 'F-02': '6.1', 'F-03': '6.3', 'F-04': '8.2' }
 
 function SourceText({ text, phrases }: { text: string; phrases: readonly string[] }) {
-  const phrase = phrases.find(value => text.includes(value))
-  if (!phrase) return <>{text}</>
-  const index = text.indexOf(phrase)
-  return <>{text.slice(0, index)}<mark>{phrase}</mark>{text.slice(index + phrase.length)}</>
+  const match = phrases.map(phrase => ({ phrase, index: text.indexOf(phrase) })).filter(item => item.index >= 0).sort((a, b) => a.index - b.index)[0]
+  if (!match) return <>{text}</>
+  return <>{text.slice(0, match.index)}<mark>{match.phrase}</mark><SourceText text={text.slice(match.index + match.phrase.length)} phrases={phrases} /></>
 }
 
 export type Finding = typeof syntheticCase.preparedFindings[number]
