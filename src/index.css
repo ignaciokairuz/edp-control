@@ -64,12 +64,12 @@ mark { color: var(--color-ink); background: var(--color-review-bg); padding: .12
 .screen-copy .lead { margin-top: 26px; }
 .screen-copy h1 { max-width: 620px; }
 .hero-screen { grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 32px 80px; align-items: start; }
-.hero-screen h1 { font-size: clamp(36px, 4.4vw, 62px); line-height: 1.11; }
+.hero-screen h1 { font-size: clamp(36px, 4.4vw, 56px); line-height: 1.11; }
 .hero-visual { grid-column: 2; grid-row: 1 / span 2; }
 .hero-comparison { padding: 26px; border: 1px solid var(--color-line); background: var(--color-surface); border-radius: 4px; }
 .hero-values { display: grid; grid-template-columns: minmax(0,1fr) 24px minmax(0,1fr); align-items: center; gap: 16px; margin-top: 22px; }
 .hero-values span:not(.unequal), .hero-values small { display: block; color: var(--color-muted); font-size: 14px; }
-.hero-values strong { display: block; font-size: clamp(27px, 2.3vw, 36px); font-weight: 500; line-height: 1.15; margin: 18px 0 8px; white-space: nowrap; }
+.hero-values strong { display: block; font-size: clamp(28px, 4.1vw, 56px); font-weight: 500; line-height: 1.15; margin: 18px 0 8px; white-space: nowrap; }
 .hero-values > div:last-child strong { color: var(--color-copper); }
 .unequal { color: var(--color-copper); font-size: 36px; line-height: 1; text-align: center; }
 .context-photo img { width: 100%; object-fit: cover; display: block; border-radius: 4px; }

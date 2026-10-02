@@ -151,6 +151,7 @@ export function CommercialPage() {
     return initial === 'source' || isFinding(initial) || ['summary', 'contact'].includes(initial)
   })
   const firstRender = useRef(true)
+  const previousScreen = useRef(screen)
   const { openPrivacy } = usePrivacy()
   const go = useCallback((next: Screen) => { window.location.hash = screenHashes[next] }, [])
   const closeSource = useCallback(() => { if (screen === 'source') go('compare'); else setSource(null) }, [screen, go])
@@ -165,7 +166,12 @@ export function CommercialPage() {
     return () => window.removeEventListener('hashchange', sync)
   }, [])
   useEffect(() => {
+    const previous = previousScreen.current
+    previousScreen.current = screen
     if (firstRender.current) { firstRender.current = false; return }
+    // Closing the guided source restores the invoking button through the dialog.
+    // Do not replace that focus with the comparison heading on the next frame.
+    if (previous === 'source' && screen === 'compare') return
     const frame = requestAnimationFrame(() => { if (screen !== 'source') { document.getElementById('screen-title')?.focus({ preventScroll: true }); window.scrollTo({ top: 0, behavior: 'instant' }) } })
     return () => cancelAnimationFrame(frame)
   }, [screen])
