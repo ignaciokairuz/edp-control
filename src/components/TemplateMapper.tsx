@@ -74,6 +74,7 @@ export function TemplateMapper() {
         <input
           ref={inputRef}
           type="file"
+          aria-label="Archivo de plantilla"
           accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
           className="sr-only"
           onChange={(event) => void onFile(event.target.files?.[0])}
@@ -117,9 +118,10 @@ export function TemplateMapper() {
             <legend className="mb-3 text-sm font-medium">Qué columna corresponde a cada dato</legend>
             <div className="grid gap-3 sm:grid-cols-2">
               {mappingFields.map((field) => (
-                <label key={field.id} className="grid gap-1 text-sm">
-                  <span>{field.label}</span>
+                <div key={field.id} className="grid gap-1 text-sm">
+                  <label htmlFor={`column-${field.id}`}>{field.label}</label>
                   <select
+                    id={`column-${field.id}`}
                     className="min-h-11 w-full min-w-0 border border-line bg-paper px-3"
                     value={mapping[field.id]}
                     onChange={(event) =>
@@ -133,7 +135,7 @@ export function TemplateMapper() {
                       </option>
                     ))}
                   </select>
-                </label>
+                </div>
               ))}
             </div>
           </fieldset>
