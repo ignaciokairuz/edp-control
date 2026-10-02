@@ -1,135 +1,203 @@
-import { ArrowDown, ArrowLeft, ArrowRight, Check, FileCheck2, FilePenLine, FileSpreadsheet, FileText, FolderOpen, LockKeyhole, Menu, Send, TriangleAlert, UserRound, X } from 'lucide-react'
-import { lazy, Suspense, useState } from 'react'
-import { contact } from '../data/contact'
+import { ArrowDown, ArrowLeft, ArrowRight, Check, FileCheck2, FilePenLine, FileSpreadsheet, FileText, FolderOpen, Menu, Paperclip, Send, TriangleAlert, UserRound } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import minePhoto from '../assets/mine-1280.webp'
+import mineSmallPhoto from '../assets/mine-640.webp'
+import reviewPhoto from '../assets/review-1280.webp'
+import reviewSmallPhoto from '../assets/review-640.webp'
+import whatsappMark from '../assets/WhatsApp_Official.svg'
+import { storyFaq } from '../data/storyFaq'
+import { sourceReasons, storySources } from '../data/storySources'
 import { syntheticCase } from '../data/syntheticCase'
+import { findingScreens, isFinding, screenForHash, screenHashes, storyScreens, type FindingScreen, type Screen } from '../lib/story'
 import { trackEvent } from '../lib/analytics'
-import { ContactLink, findingDraft } from './ContactLink'
-import { FindingComparison } from './FindingComparison'
 import { usePrivacy } from '../lib/privacy'
+import { ContactLink } from './ContactLink'
+import { FindingComparison, SourceText } from './FindingComparison'
+import { ProductDialog } from './ProductDialog'
 
-const TemplateMapper = lazy(() => import('./TemplateMapper').then(module => ({ default: module.TemplateMapper })))
-const findingLabels = ['Precio distinto', 'Cantidad a revisar', 'Falta un respaldo', 'Adicional para consultar']
-const links = [{ href: '#demo', label: 'Ejemplo' }, { href: '#detecta', label: 'Qué revisamos' }, { href: '#probar', label: 'Cómo probarlo' }, { href: '#preguntas', label: 'Preguntas frecuentes' }]
+const findingLabels = ['Precio distinto', 'Cantidad a revisar', 'Falta respaldo', 'Confirmar cambio']
+const findingNames = ['Camioneta 4x4', 'Movimiento de suelo', 'Montaje de tablero', 'Turno nocturno']
+const lineNames = [...findingNames, 'Supervisión', 'Generador', 'Topografía', 'Retiro de residuos']
+const steps = { edp: 2, sources: 3, compare: 4, source: 5 } as const
+const money = (amount: number) => 'USD ' + amount.toLocaleString('es-AR')
 
-function Navigation() {
-  const [open, setOpen] = useState(false)
-  return <header className="site-header"><div className="wrap-wide nav-row">
-    <a href="#top" className="brand"><FileCheck2 size={28} aria-hidden /><span><strong>EDP Control</strong><small>por Ignacio Kairuz</small></span></a>
-    <nav aria-label="Secciones" className="desktop-nav">{links.map(link => <a key={link.href} href={link.href}>{link.label}</a>)}</nav>
-    <ContactLink source="nav" className="btn btn-secondary nav-contact">Hablar con Ignacio</ContactLink>
-    <button className="menu-button" type="button" aria-label={open ? 'Cerrar menú' : 'Abrir menú'} aria-expanded={open} aria-controls="mobile-nav" onClick={() => setOpen(!open)} onKeyDown={event => { if (event.key === 'Escape') setOpen(false) }}>{open ? <X aria-hidden /> : <Menu aria-hidden />}</button>
-  </div><nav id="mobile-nav" aria-label="Secciones móviles" className="mobile-nav" hidden={!open}>{links.map(link => <a key={link.href} href={link.href} onClick={() => setOpen(false)}>{link.label}</a>)}<ContactLink source="mobile-nav">Hablar con Ignacio</ContactLink></nav></header>
+function RouteLink({ to, children, className = '', onClick }: { to: Screen; children: ReactNode; className?: string; onClick?: () => void }) {
+  return <a href={screenHashes[to]} className={className} onClick={onClick}>{children}</a>
+}
+
+function PrimaryLink({ to, label, onClick }: { to: Screen; label: string; onClick?: () => void }) {
+  return <RouteLink to={to} className="btn btn-primary" onClick={onClick}>{label}<ArrowRight size={20} aria-hidden /></RouteLink>
+}
+
+function WhatsAppAction({ source, large = false }: { source: string; large?: boolean }) {
+  return <ContactLink source={source} ariaLabel="Escribir por WhatsApp" iconOnly className={`whatsapp-action ${large ? 'whatsapp-large' : ''}`}><img src={whatsappMark} alt="" width={large ? 46 : 36} height={large ? 46 : 36} /></ContactLink>
+}
+
+function ContextPhoto({ kind, className = '' }: { kind: 'mine' | 'review'; className?: string }) {
+  const review = kind === 'review'
+  return <figure className={`context-photo ${className}`}><img src={review ? reviewPhoto : minePhoto} srcSet={`${review ? reviewSmallPhoto : mineSmallPhoto} 640w, ${review ? reviewPhoto : minePhoto} 1280w`} sizes="(max-width: 699px) calc(100vw - 48px), (max-width: 1023px) 45vw, 600px"
+    alt={review ? 'Profesionales revisando planos y documentos en un entorno industrial.' : 'Excavadora trabajando en una explotación minera.'}
+    width={1600} height={1067} loading={className.includes('hero') ? 'eager' : 'lazy'} />
+    <figcaption>Foto de contexto · <a href={review ? 'https://www.pexels.com/photo/engineers-looking-at-blueprint-3862135/' : 'https://www.pexels.com/photo/excavator-in-mine-15138925/'} target="_blank" rel="noopener noreferrer">Pexels</a></figcaption></figure>
+}
+
+function DocumentCard({ kind }: { kind: 'edp' | 'addendum' }) {
+  const edp = kind === 'edp'
+  return <article className={`document-card ${edp ? '' : 'addendum-card'}`} aria-label={edp ? 'Estado de Pago del ejemplo' : 'Adenda vigente del ejemplo'}>
+    <p className="document-label">{edp ? <FileSpreadsheet size={20} aria-hidden /> : <FilePenLine size={20} aria-hidden />}{edp ? 'Estado de Pago' : 'Adenda 01'}</p>
+    <p className="document-period">{edp ? 'Agosto 2026 · caso ficticio' : 'Vigente desde 01/08/2026'}</p>
+    <div className="document-line"><p>01 · Camioneta 4x4</p>{edp ? <><p>15 días × USD 120/día</p><strong>USD 1.800</strong></> : <><strong>USD 135</strong><p>por día</p></>}</div>
+    <p className="caption">{edp ? 'EDP-02 · revisión 0' : 'Adenda 01 · pág. 1 · ítem 01'}</p>
+  </article>
 }
 
 function Hero() {
-  return <section className="hero" aria-labelledby="hero-title"><div className="wrap-wide hero-grid">
-    <div className="hero-copy"><p className="eyebrow">Para contratistas mineros</p><h1 id="hero-title">Antes de enviar tu Estado de Pago, <span>encontrá lo que no cierra.</span></h1><p className="hero-description">Compará el EDP con el contrato, las adendas y los respaldos. Ves la diferencia y el archivo que la explica.</p></div>
-    <div className="hero-proof"><div className="proof-header"><span className="example-tag">CASO FICTICIO</span><span>Agosto 2026 · línea 01</span></div><h2>Camioneta 4x4</h2>
-      <div className="proof-doc"><FileSpreadsheet size={21} aria-hidden /><div><span>En el Estado de Pago</span><strong>15 días × USD 120</strong></div><span className="doc-corner">EDP</span></div>
-      <div className="proof-connector"><ArrowDown size={16} aria-hidden /><span>comparado con</span></div>
-      <div className="proof-doc source-doc"><FilePenLine size={21} aria-hidden /><div><span>Adenda 01 · desde 01/08/2026</span><strong>USD 135 por día</strong></div><span className="doc-corner">p. 1</span></div>
-      <div className="proof-finding"><TriangleAlert size={20} aria-hidden /><p>El precio usado no coincide con la adenda.</p></div><a href="#demo" className="source-link" onClick={() => trackEvent('hero_demo_click', { source: 'comparison' })}>Ver de dónde sale <ArrowRight size={17} aria-hidden /></a>
-    </div>
-    <div className="hero-actions"><div className="button-row"><a href="#demo" className="btn btn-on-dark" onClick={() => trackEvent('hero_demo_click', { source: 'hero' })}>Ver un caso de ejemplo <ArrowRight size={18} aria-hidden /></a><a href="#probar" className="btn btn-ghost-dark">Probémoslo con un EDP</a></div><p>Demo con datos ficticios. Para probar tu caso, empezamos con una plantilla sin datos sensibles.</p></div>
-  </div><div className="hero-footer"><div className="wrap-wide">Diferencias para revisar. La autorización sigue en el circuito del cliente.</div></div></section>
+  return <section className="hero-screen screen-layout" aria-labelledby="screen-title">
+    <div className="screen-copy"><p className="eyebrow">Para contratistas mineros</p><h1 id="screen-title" tabIndex={-1}>Antes de enviar tu Estado de Pago, encontrá lo que no cierra.</h1>
+      <p className="lead">Tu EDP dice qué hiciste y cuánto esperás cobrar. Lo comparamos con lo acordado y sus respaldos, antes del envío.</p></div>
+    <div className="hero-visual"><div className="hero-comparison"><p className="document-label">Camioneta 4x4 · caso ficticio</p><div className="hero-values"><div><span>En el EDP</span><strong>USD 120</strong><small>por día</small></div><span className="unequal" aria-label="no coincide con">≠</span><div><span>Adenda vigente</span><strong>USD 135</strong><small>por día</small></div></div></div><ContextPhoto kind="mine" className="hero-photo" /></div>
+    <div className="hero-action-area"><RouteLink to="overview" className="quiet-action expert-link" onClick={() => trackEvent('hero_demo_click', { source: 'expert-shortcut' })}>Ya preparo Estados de Pago <ArrowRight size={16} aria-hidden /> ver el ejemplo</RouteLink>
+      <PrimaryLink to="edp" label="Ver cómo funciona" onClick={() => trackEvent('guide_start')} /><p className="caption">Pre-revisión. Vos revisás y tu equipo decide.</p></div>
+  </section>
 }
 
-const guide = [
-  { title: 'Este contratista prepara su EDP de agosto.', text: 'La línea 01 presenta una camioneta por 15 días a USD 120 por día. Es una de las ocho líneas de este EDP ficticio.', value: '15 días × USD 120 = USD 1.800', source: 'EDP-02 · Rev. 0 · agosto 2026' },
-  { title: 'La orden de servicio tenía este precio.', text: 'El precio base de la camioneta era USD 120 por día. Pero antes de compararlo hay que mirar los cambios y el período.', value: 'Camioneta 4x4 · USD 120 por día', source: 'OS-2407 · Anexo A · p. 3' },
-  { title: 'Esta adenda cambió el precio desde el 1 de agosto.', text: 'La Adenda 01 del ejemplo está firmada y cambia este ítem a USD 135 por día desde el 01/08/2026.', value: 'USD 120 → USD 135 por día', source: 'Adenda 01 · p. 1 · ítem 01' },
-  { title: 'El EDP siguió usando USD 120.', text: 'El período es agosto, pero el EDP conserva el precio anterior. Revisar sólo la orden base no mostraría esta diferencia.', value: 'USD 1.800 en el EDP · USD 2.025 con la adenda', source: 'Diferencia a igual cantidad: USD 225. Hay que confirmar la corrección.' },
-  { title: 'No todas las marcas piden la misma decisión.', text: 'También hay 16 m³ para revisar, un acta de aceptación no encontrada y un adicional cuya aprobación no aparece. Una cantidad diferente y un documento faltante necesitan revisiones distintas.', value: 'Comparar · buscar un respaldo · consultar a Contratos', source: 'Los cuatro hallazgos están disponibles en “Explorar hallazgos”.' },
-  { title: 'Revisás la fuente, corregís o consultás y enviás por tu circuito.', text: 'La revisión previa busca encontrar antes lo que puede generar una observación. La demo no modifica archivos ni autoriza a facturar.', value: 'La decisión sigue con tu equipo.', source: 'El siguiente paso es comprobar si esto sirve sobre un caso de tu proceso.' },
-]
-
-function Example() {
-  const [selected, setSelected] = useState(0)
-  const [mode, setMode] = useState<'explore' | 'guide'>('explore')
-  const [step, setStep] = useState(0)
-  const finding = syntheticCase.preparedFindings[selected]
-  function switchMode(next: 'explore' | 'guide') { setMode(next); if (next === 'guide') { setStep(0); trackEvent('guide_start') } }
-  return <section id="demo" className="section example-section" aria-labelledby="demo-title"><div className="wrap-wide">
-    <div className="section-heading"><p className="eyebrow">El ejemplo, abierto</p><h2 id="demo-title">Mirá qué no cierra y de dónde sale.</h2><p>Este contratista ficticio prepara el EDP de agosto. El paquete reúne el EDP, la orden de servicio, una adenda y los respaldos del período.</p></div>
-    <div className="demo-disclosure"><span className="example-tag">TODO EL CASO ES FICTICIO</span><p>Los hallazgos están preparados para mostrar cómo sería la revisión. Esta demo no compara archivos reales.</p></div>
-    <div className="demo-mode" role="group" aria-label="Cómo ver el ejemplo"><button type="button" aria-pressed={mode === 'explore'} onClick={() => switchMode('explore')}>Explorar hallazgos</button><button type="button" aria-pressed={mode === 'guide'} onClick={() => switchMode('guide')}>Ver paso a paso</button></div>
-    <div className="package-strip" aria-label="Documentos ficticios del caso">{[{ icon: FileSpreadsheet, title: 'Estado de Pago', ref: 'EDP-02 · 8 líneas' }, { icon: FileText, title: 'Orden de servicio', ref: 'OS-2407' }, { icon: FilePenLine, title: 'Adenda 01', ref: 'Desde 01/08' }, { icon: FolderOpen, title: 'Respaldos', ref: 'Actas, partes y fotos' }].map(doc => <div key={doc.title}><doc.icon size={21} aria-hidden /><span><strong>{doc.title}</strong><small>{doc.ref}</small></span></div>)}</div>
-    {mode === 'explore' ? <div className="explorer"><div className="finding-picker"><h3>4 cosas para revisar</h3><p className="caption">Elegí una para ver la comparación.</p><div className="finding-buttons" role="group" aria-label="Elegir hallazgo">{syntheticCase.preparedFindings.map((item, i) => <button key={item.id} type="button" aria-pressed={selected === i} aria-controls="selected-finding" onClick={() => { setSelected(i); trackEvent('finding_select', { finding: item.id }) }}><span className="finding-number">0{i + 1}</span><span><strong>{findingLabels[i]}</strong><small>{syntheticCase.edp.lines[i].description}</small></span><ArrowRight size={17} aria-hidden /></button>)}</div></div><div id="selected-finding" aria-live="polite" aria-atomic="false"><FindingComparison key={finding.id} finding={finding} /></div></div> : <div className="guide-panel">
-      <div className="guide-progress" aria-label={`Paso ${step + 1} de 6`}>{guide.map((_, i) => <span key={i} className={i <= step ? 'active' : ''} />)}</div>
-      <div className="guide-content" aria-live="polite" aria-atomic="true"><p className="eyebrow">Paso {step + 1} de 6</p><h3>{guide[step].title}</h3><p>{guide[step].text}</p><div className="guide-value">{guide[step].value}<small>{guide[step].source}</small></div></div>
-      <div className="button-row"><button type="button" className="btn btn-secondary" disabled={step === 0} onClick={() => setStep(step - 1)}><ArrowLeft size={17} aria-hidden />Atrás</button>{step < 5 ? <button type="button" className="btn btn-primary" onClick={() => { setStep(step + 1); if (step === 4) trackEvent('guide_complete') }}>Siguiente<ArrowRight size={17} aria-hidden /></button> : <button type="button" className="btn btn-primary" onClick={() => setMode('explore')}>Explorar hallazgos<ArrowRight size={17} aria-hidden /></button>}</div>
-    </div>}
-    <details className="disclosure edp-lines"><summary>Ver las 8 líneas del EDP ficticio<span className="details-plus" aria-hidden>+</span></summary><div className="disclosure-body"><p>EDP-02 · Rev. 0 · agosto 2026 · USD · sin impuestos ni retenciones. Importes ilustrativos, sin aprobación.</p><div className="table-scroll" tabIndex={0} role="region" aria-label="Líneas del EDP, tabla desplazable"><table><caption>Contratista Delta · Proyecto Altura — ambos ficticios</caption><thead><tr><th scope="col">Línea</th><th scope="col">Concepto</th><th scope="col">Cantidad</th><th scope="col">Precio USD</th><th scope="col">Subtotal USD</th><th scope="col">Controles mostrados</th></tr></thead><tbody>{syntheticCase.edp.lines.map((line, i) => <tr key={line.lineId}><td>{line.lineId}</td><th scope="row">{line.description}</th><td>{line.quantityPeriod} {line.unit}</td><td>{line.unitPrice}</td><td>{line.lineSubtotal.toLocaleString('es-AR')}</td><td>{i < 4 ? findingLabels[i] : <span className="no-difference"><Check size={14} aria-hidden />Sin diferencias en los controles mostrados</span>}</td></tr>)}</tbody><tfoot><tr><th colSpan={4} scope="row">Subtotal del ejemplo</th><td>{syntheticCase.edp.subtotal.toLocaleString('es-AR')}</td><td>Sin aprobación</td></tr></tfoot></table></div><p className="caption">Las líneas 05–08 coinciden en precio con el Anexo A de OS-2407 y en cantidad con Partes_Agosto.csv. No se revisan acumulados, impuestos, retenciones ni la calidad técnica del trabajo.</p></div></details>
-    <div className="example-contact"><div><h3>¿Te pasó algo parecido en un EDP?</h3><p>Podés empezar contando qué te hicieron corregir. No hace falta enviar archivos para hablar.</p></div><ContactLink source="findings" draft={findingDraft}>Contarle mi caso a Ignacio</ContactLink></div>
-  </div></section>
+function WorkSequence() {
+  return <ol className="work-sequence" aria-label="Lugar de EDP Control en el proceso">{[
+    { icon: UserRound, label: 'Trabajo realizado' }, { icon: FileSpreadsheet, label: 'Estado de Pago' },
+    { icon: FileCheck2, label: 'Revisión previa' }, { icon: Send, label: 'Envío' },
+  ].map((step, i) => <li key={step.label}><step.icon size={20} aria-hidden /><span>{step.label}</span>{i < 3 ? <ArrowRight className="sequence-arrow" size={16} aria-hidden /> : null}</li>)}</ol>
 }
 
-function Workflow() {
-  return <section className="section workflow-section" aria-labelledby="workflow-title"><div className="wrap-wide"><div className="section-heading"><p className="eyebrow">Una revisión antes del envío</p><h2 id="workflow-title">La diferencia es cuándo te enterás.</h2><p>Si algo no cierra después del envío, el paquete puede volver para corregirse. La propuesta es revisar antes lo que se puede comprobar con los archivos.</p></div><div className="workflow-grid">
-    <div className="workflow-card"><h3>Cuando la observación llega después</h3><ol>{[{ icon: FileSpreadsheet, label: 'Preparás el EDP' }, { icon: Send, label: 'Enviás' }, { icon: TriangleAlert, label: 'Recibís una observación' }, { icon: FilePenLine, label: 'Corregís y reenviás' }].map((item, i) => <li key={item.label}><span>{i + 1}</span><item.icon size={19} aria-hidden />{item.label}</li>)}</ol></div>
-    <div className="workflow-card workflow-precheck"><h3>Con una revisión previa</h3><ol>{[{ icon: FileSpreadsheet, label: 'Preparás el EDP' }, { icon: FileCheck2, label: 'Revisás las diferencias' }, { icon: UserRound, label: 'Corregís o consultás' }, { icon: Send, label: 'Enviás al mismo circuito' }].map((item, i) => <li key={item.label}><span>{i + 1}</span><item.icon size={19} aria-hidden />{item.label}</li>)}</ol></div>
-  </div><p className="context-note">El cliente mantiene su revisión y la autorización para facturar. La revisión previa busca reducir vueltas evitables; todavía tenemos que medirlo en casos reales.</p></div></section>
+function EdpExplanation() {
+  return <section className="edp-screen screen-layout" aria-labelledby="screen-title"><div className="screen-copy"><p className="eyebrow">El trabajo se presenta para cobrar</p><h1 id="screen-title" tabIndex={-1}>Primero armás lo que querés presentar para cobrar.</h1><p className="lead">El Estado de Pago reúne lo que hiciste en el período, cuánto corresponde cobrar y los documentos que lo respaldan.</p><WorkSequence /></div>
+    <div className="edp-visual"><ContextPhoto kind="review" className="review-strip" /><DocumentCard kind="edp" /></div></section>
 }
 
-function Scope() {
-  return <section id="detecta" className="section scope-section" aria-labelledby="scope-title"><div className="wrap-wide"><div className="section-heading"><p className="eyebrow">Controles con una fuente</p><h2 id="scope-title">Qué vale la pena revisar antes de enviar.</h2><p>Los controles se acuerdan con tu equipo y con los documentos disponibles.</p></div><div className="scope-grid">{[
-    { icon: FileText, title: 'Precios y unidades', text: '¿La línea usa el precio y la unidad que corresponden al período?' },
-    { icon: FileSpreadsheet, title: 'Cantidades y acumulados', text: '¿Lo presentado coincide con el avance respaldado y los topes documentados?' },
-    { icon: FilePenLine, title: 'Adendas y adicionales', text: '¿Qué cambio respalda esa línea y qué falta confirmar?' },
-    { icon: FolderOpen, title: 'Respaldos', text: '¿Está en el paquete el documento que exige ese entregable?' },
-  ].map(item => <article key={item.title}><item.icon size={24} aria-hidden /><h3>{item.title}</h3><p>{item.text}</p></article>)}</div>
-  <details className="disclosure"><summary>Ver los controles del ejemplo<span className="details-plus" aria-hidden>+</span></summary><div className="disclosure-body"><p>El caso muestra precio contra una adenda firmada, cantidad del período contra un acta, presencia de un acta requerida y estado documental de una solicitud de cambio. No comprueba la calidad del trabajo ni detecta automáticamente toda cláusula posible. Tampoco revisa acumulados, impuestos, retenciones o descuentos en este ejemplo.</p></div></details>
-  <div className="output-grid"><div><h3>Qué te devuelve</h3><p>Una lista de cosas para revisar. Cada marca reúne la línea del EDP, la fuente, el motivo y lo que conviene confirmar.</p></div><div><UserRound size={23} aria-hidden /><h3>La decisión sigue con tu equipo</h3><p>Vos revisás la fuente y decidís qué corregir o consultar. EDP Control no aprueba el Estado de Pago ni autoriza a facturar.</p></div></div></div></section>
+function SourcesExplanation() {
+  return <section className="sources-screen screen-layout" aria-labelledby="screen-title"><div className="screen-copy"><p className="eyebrow">Lo presentado tiene otras fuentes</p><h1 id="screen-title" tabIndex={-1}>Pero el EDP no vive solo.</h1><p className="lead">Se revisa junto con lo acordado y con los documentos del trabajo.</p>
+    <ul className="source-list"><li><FileText size={22} aria-hidden /><span>Orden de servicio<small>El alcance y las condiciones</small></span></li><li><FilePenLine size={22} aria-hidden /><span>Adenda 01<small>Un cambio vigente desde 01/08</small></span></li><li><Paperclip size={22} aria-hidden /><span>Respaldos<small>Actas, partes, informes y fotos</small></span></li></ul></div>
+    <div className="sources-visual"><div className="persistent-edp"><FileSpreadsheet size={20} aria-hidden /><span>En el EDP: <strong>USD 120/día</strong></span></div><div className="causal-arrow"><ArrowDown size={24} aria-hidden /><span>Miramos la adenda del período</span></div><DocumentCard kind="addendum" /></div></section>
 }
 
-function Trial() {
-  const [readerOpen, setReaderOpen] = useState(false)
-  return <section id="probar" className="section trial-section" aria-labelledby="trial-title"><div className="wrap-wide"><div className="section-heading"><p className="eyebrow">Una primera prueba acotada</p><h2 id="trial-title">Empecemos con un EDP.</h2><p>Primero vemos tu plantilla y una observación reciente. Si hay un caso que valga la pena probar, acordamos el alcance, los archivos, el tratamiento de datos, el plazo y el precio antes de empezar.</p></div><ol className="trial-steps">{[
-    { title: 'Vemos cómo lo revisan hoy', text: 'Una plantilla sin datos sensibles y un ejemplo de lo que te hicieron corregir.' },
-    { title: 'Probamos los controles acordados', text: 'Trabajamos en paralelo al circuito oficial, sobre un paquete autorizado y con las fuentes necesarias.' },
-    { title: 'Medimos si conviene seguir', text: 'Comparamos tiempo de revisión, hallazgos útiles y trabajo extra. Después decidimos si tiene sentido continuar.' },
-  ].map((item, i) => <li key={item.title}><span className="step-number">0{i + 1}</span><h3>{item.title}</h3><p>{item.text}</p></li>)}</ol>
-  <p className="context-note">La primera prueba puede hacerse sobre archivos. No requiere cambiar tu ERP ni compartir credenciales del portal. Tu empresa puede necesitar autorizar el uso de esos archivos.</p>
-  <div className="trial-details">{[
-    ['Qué archivos harían falta', 'Según el control: EDP, secciones relevantes del contrato u orden de servicio, adendas del período, índice de respaldos y documentos necesarios. Para acumulados puede hacer falta el EDP anterior o el historial aprobado. Empezamos con lo mínimo; no hace falta enviar todo el contrato para la primera conversación.'],
-    ['Qué pasa con los datos', 'Para la primera conversación podemos usar una plantilla vacía o datos ficticios. Antes de recibir documentación real acordamos el canal, las personas con acceso, el lugar de procesamiento, los proveedores que intervengan y el plazo de eliminación. La privacidad de la demo no describe automáticamente la de un piloto.'],
-    ['Qué mediríamos', 'Tiempo total de preparar y revisar el caso, tiempo que agrega la prueba, marcas útiles y marcas que no correspondían, problemas relevantes que no se detectaron y correcciones o reenvíos observados. El piloto no tiene resultados publicados todavía.'],
-  ].map(([title, text]) => <details className="disclosure" key={title}><summary>{title}<span className="details-plus" aria-hidden>+</span></summary><div className="disclosure-body"><p>{text}</p></div></details>)}</div>
-  <div className="button-row"><ContactLink source="trial">Probémoslo con un EDP</ContactLink><ContactLink source="trial" channel="calendar" className="btn btn-secondary">Agendar 20 minutos</ContactLink></div><p className="caption">No hace falta enviar un contrato para empezar a hablar.</p>
-  <details id="lector" className="disclosure template-disclosure" onToggle={event => { setReaderOpen(event.currentTarget.open); if (event.currentTarget.open) trackEvent('template_reader_open') }}><summary>¿Podemos leer las columnas de tu plantilla?<span className="details-plus" aria-hidden>+</span></summary>{readerOpen ? <div className="disclosure-body"><Suspense fallback={<p role="status">Abriendo lector de columnas…</p>}><TemplateMapper /></Suspense></div> : null}</details>
-  </div></section>
+function Comparison() {
+  return <section className="comparison-screen screen-layout" aria-labelledby="screen-title"><div className="screen-copy"><p className="eyebrow">Camioneta 4x4 · agosto 2026</p><h1 id="screen-title" tabIndex={-1}>El precio no coincide.</h1><p className="lead desktop-only">El EDP usa una tarifa distinta de la adenda vigente. Ahora podés ver la diferencia.</p></div>
+    <div className="comparison-visual"><div className="big-comparison"><div><p className="document-label"><FileSpreadsheet size={20} aria-hidden />En el Estado de Pago</p><strong>USD 120</strong><p>por día · 15 días</p></div><span className="unequal" aria-label="no coincide con">≠</span><div><p className="document-label"><FilePenLine size={20} aria-hidden />En la adenda vigente</p><strong>USD 135</strong><p>por día · desde 01/08</p></div></div>
+      <p className="difference-note"><TriangleAlert size={20} aria-hidden />Diferencia para revisar en 15 días: USD 225</p><p className="caption">Caso ficticio. La diferencia necesita revisión.</p></div></section>
 }
 
-const faqs = [
-  ['¿Qué hace EDP Control?', 'Propone revisar el Estado de Pago antes de enviarlo, comparando líneas con contrato, adendas y respaldos. El resultado muestra diferencias y casos para consultar, con su fuente. Esta web es una demostración ficticia; el flujo real se prueba primero con tu proceso.'],
-  ['¿Puedo probarlo con nuestra plantilla?', 'Empezamos por mirar el formato y los controles que usan. El lector de la web puede reconocer columnas de la primera hoja de un XLSX o CSV, pero eso no confirma un precontrol completo. Si el formato tiene varias hojas o encabezados distintos, lo revisamos antes de acordar una prueba.'],
-  ['¿Tengo que enviar el contrato completo?', 'Para hablar, no. Podemos empezar con una plantilla vacía o un ejemplo con datos ficticios. Para probar una regla concreta sí hace falta la sección que la respalda, y tu empresa debe autorizar su uso. Acordamos qué compartir antes de recibirla.'],
-  ['¿Necesito conectar SAP, Coupa u otro sistema?', 'La primera prueba puede hacerse con archivos autorizados, sin integración. Primero vemos qué controles ya hace tu sistema y qué trabajo queda fuera. Si después hace falta una conexión, se evalúa por separado.'],
-  ['¿Cuánto cuesta probarlo?', 'No hay una tarifa publicada todavía. Después de ver el caso, se acuerdan alcance, plazo y precio por escrito antes de comenzar. La demostración pública no implica que una prueba con trabajo sobre tus archivos sea gratuita.'],
-  ['¿Qué archivos necesita una revisión real?', 'Depende del control. Puede requerir el EDP, secciones del contrato, adendas, índice de respaldos y evidencias del período. Para acumulados puede hacer falta el historial anterior. Sin la fuente necesaria, el resultado tiene que decir que ese control no se pudo comprobar.'],
-  ['¿Esto aprueba el EDP o permite facturar?', 'No. Señala diferencias para revisión. La aprobación contractual, la autorización para facturar y el pago siguen el circuito del cliente.'],
-  ['¿Qué pasa si marca algo que está bien?', 'Revisás la fuente con tu equipo. Si la marca no corresponde, se registra y se ajusta el control. En una prueba también medimos esas marcas y los problemas relevantes que no se detectaron; ver pocas alertas no demuestra que todo esté bien.'],
-  ['¿Quién puede ver los archivos y dónde se procesan?', 'El lector de columnas de esta web no envía el contenido a un servidor. Un piloto puede requerir otro mecanismo: antes de recibir documentación real acordamos personas con acceso, procesamiento, proveedores y eliminación. Esa configuración todavía no está definida para todos los casos.'],
-  ['¿Qué queda para Contratos o el usuario técnico?', 'La interpretación contractual, la aceptación del trabajo y los cambios que necesitan confirmación. La herramienta organiza lo que encontró; no reemplaza esa decisión.'],
-  ['¿Tenemos que cambiar el proceso o involucrar a IT?', 'La primera prueba se plantea en paralelo y el envío oficial sigue igual. No requiere por diseño acceso al ERP, pero tu política interna puede pedir revisión de IT, Seguridad o Contratos antes de usar datos reales.'],
-  ['¿Cuánto lleva una prueba?', 'Primero tenemos una conversación de unos 20 minutos. La duración de la prueba se acuerda después de ver archivos, reglas y disponibilidad del equipo. Si hace falta observar uno o dos ciclos de EDP, puede durar más que una prueba sobre un caso histórico.'],
-  ['¿Qué hacemos si no mejora el trabajo?', 'Revisamos el resultado y decidimos no continuar o cambiar el alcance. No se propone sumar otra herramienta si el proceso actual ya resuelve bien el trabajo. Las condiciones económicas del piloto quedan acordadas antes de empezar.'],
-]
-
-function Faq() {
-  const [more, setMore] = useState(false)
-  return <section id="preguntas" className="section faq-section" aria-labelledby="faq-title"><div className="wrap-wide faq-layout"><div className="section-heading"><p className="eyebrow">Antes de probarlo</p><h2 id="faq-title">Lo que conviene saber.</h2><p>Podemos empezar por una conversación. Los archivos y las condiciones se acuerdan después.</p></div><div><div className="faq-list">{faqs.slice(0, 5).map(([question, answer]) => <details className="disclosure" key={question}><summary>{question}<span className="details-plus" aria-hidden>+</span></summary><div className="disclosure-body"><p>{answer}</p></div></details>)}</div><div id="more-faqs" className="faq-list" hidden={!more}>{faqs.slice(5).map(([question, answer]) => <details className="disclosure" key={question}><summary>{question}<span className="details-plus" aria-hidden>+</span></summary><div className="disclosure-body"><p>{answer}</p></div></details>)}</div><button type="button" className="btn btn-secondary more-faq" aria-expanded={more} aria-controls="more-faqs" onClick={() => setMore(!more)}>{more ? 'Ver menos preguntas' : 'Ver más preguntas'}</button></div></div></section>
+function ProductOverview({ onPackage, onNeutral }: { onPackage: () => void; onNeutral: () => void }) {
+  return <section className="product-screen" aria-labelledby="screen-title"><div className="product-intro"><div><p className="eyebrow">Así sería usarlo · caso ficticio</p><h1 id="screen-title" tabIndex={-1}>EDP Agosto 2026</h1><p className="lead">8 líneas · <strong>4 para revisar</strong></p></div><button type="button" className="quiet-action" onClick={onPackage}><FolderOpen size={20} aria-hidden />Ver el paquete</button></div>
+    <div className="mini-application"><aside className="product-inputs"><p className="document-label">Documentos del ejemplo</p><ul>{[
+      { icon: FileSpreadsheet, label: 'Estado de Pago', ref: 'EDP-02 · 8 líneas' }, { icon: FileText, label: 'Orden de servicio', ref: 'OS-2407' },
+      { icon: FilePenLine, label: 'Adenda 01', ref: 'Desde 01/08' }, { icon: Paperclip, label: 'Respaldos', ref: 'Actas, partes, informe y fotos' },
+    ].map(doc => <li key={doc.label}><doc.icon size={22} aria-hidden /><span>{doc.label}<small>{doc.ref}</small></span></li>)}</ul><p className="caption">El paquete y los hallazgos están precargados. La demo no analiza archivos reales.</p></aside>
+      <div className="edp-rows"><p className="rows-label">Línea / concepto <span>Controles mostrados</span></p><ul>{syntheticCase.edp.lines.map((line, i) => <li key={line.lineId}>{i < 4 ? <RouteLink to={findingScreens[i]} className="finding-row review-row" onClick={() => trackEvent('finding_select', { finding: syntheticCase.preparedFindings[i].id })}><span className="row-number">{line.lineId}</span><span className="row-copy"><strong>{lineNames[i]}</strong><span className="row-status"><TriangleAlert size={16} aria-hidden />{findingLabels[i]}</span></span><ArrowRight size={20} aria-hidden /></RouteLink> : <button type="button" className="finding-row neutral-row" onClick={onNeutral}><span className="row-number">{line.lineId}</span><span className="row-copy"><strong>{lineNames[i]}</strong><span className="row-status"><Check size={16} aria-hidden />Sin diferencias en los controles mostrados</span></span></button>}</li>)}</ul></div></div>
+    <p className="caption product-note">Abrí una línea para ver qué dice el EDP, qué dice la fuente y qué conviene revisar. Vos decidís.</p>
+  </section>
 }
 
-function Founder() {
-  return <section id="contacto" className="section founder-section" aria-labelledby="founder-title"><div className="wrap-wide founder-grid"><div className="founder-intro"><div className="founder-initials" aria-hidden>IK</div><p className="eyebrow">por Ignacio Kairuz</p><h2 id="founder-title">Lo vemos directamente conmigo.</h2><p>Soy Ignacio Kairuz. Construyo automatizaciones y sistemas de datos para procesos donde hay que cruzar archivos y encontrar diferencias. He trabajado en productos de datos y herramientas internas para entornos empresariales.</p><p>Con EDP Control quiero probar ese enfoque sobre un trabajo concreto: revisar Estados de Pago antes de presentarlos. El siguiente paso es comprobar con tu equipo si sirve sobre sus archivos y sus reglas.</p><a href={contact.linkedinUrl} target="_blank" rel="noopener noreferrer" className="text-link" onClick={() => trackEvent('linkedin_click', { source: 'founder' })}>Ignacio Kairuz en LinkedIn <ArrowRight size={17} aria-hidden /></a></div><div className="contact-card"><h3>Veamos qué pasa con uno de tus EDP.</h3><p>Podemos empezar con una plantilla sin datos sensibles y una observación reciente. Te digo qué se puede probar y qué información haría falta.</p><ContactLink source="founder">Hablar con Ignacio</ContactLink><ContactLink source="founder" channel="calendar" className="btn btn-secondary">Agendar 20 minutos</ContactLink><ContactLink source="founder" channel="email" className="text-link">Escribir por email</ContactLink><small>Al abrir WhatsApp o email se prepara un borrador. Revisalo antes de enviarlo. No se adjunta ningún archivo automáticamente.</small></div></div></section>
+function FindingDetail({ screen, onSource }: { screen: FindingScreen; onSource: () => void }) {
+  const index = findingScreens.indexOf(screen)
+  const finding = syntheticCase.preparedFindings[index]
+  return <section className="detail-screen screen-layout" aria-labelledby="screen-title"><div className="screen-copy"><p className="eyebrow">EDP Agosto 2026 · caso ficticio</p><h1 id="screen-title" tabIndex={-1}>{findingNames[index]}</h1><p className="lead">Una marca para revisar, con su fuente.</p><RouteLink to="overview" className="quiet-action detail-back"><ArrowLeft size={18} aria-hidden />Volver a las 8 líneas</RouteLink></div><FindingComparison finding={finding} onOpenSource={onSource} /></section>
 }
 
-function Methodology() {
-  return <section id="metodologia" className="methodology-section"><div className="wrap-wide"><details className="disclosure"><summary>Cómo está hecho este ejemplo<span className="details-plus" aria-hidden>+</span></summary><div className="disclosure-body"><p>Los documentos, empresas e importes son ficticios. Los hallazgos y fragmentos están preparados para explicar la revisión; esta demo no lee esos PDF ni ejecuta un control documental general. El lector opcional de plantilla es una función distinta y sólo lee columnas.</p><p>El caso se inspira en procesos públicos de revisión de Estados de Pago. Las referencias documentan que ese trabajo existe; no prueban que todas las empresas lo hagan igual ni que EDP Control haya sido probado en ellas.</p><p>Referencias públicas consultadas el 1/10/2026:</p><ul><li><a href="https://vicuna.com/soy-proveedor-contratista/" target="_blank" rel="noopener noreferrer">Vicuña: guía de revisión de Estados de Pago</a></li><li><a href="https://vicuna.com/portal-coupa/" target="_blank" rel="noopener noreferrer">Vicuña: Coupa y cambios en el envío de documentación</a></li></ul><p>Las páginas describen circuitos diferentes de envío; debe confirmarse cuál aplica a cada empresa y contrato. Primero vemos qué hace el sistema actual y qué queda fuera. EDP Control no está afiliado a las organizaciones mencionadas.</p></div></details></div></section>
+function SourcePanel({ finding, guided = false, onClose }: { finding: FindingScreen; guided?: boolean; onClose: () => void }) {
+  const [tab, setTab] = useState(finding === 'support' ? 1 : 0)
+  const sources = storySources[finding], source = sources[tab]
+  return <ProductDialog title="Fuente" onClose={onClose} className="source-dialog"><div className="source-content">
+    <p className="eyebrow">{guided ? '5 / 5 · la marca tiene una fuente' : 'EDP Agosto 2026 · caso ficticio'}</p><h3>{findingNames[findingScreens.indexOf(finding)]}</h3>
+    {sources.length > 1 ? <div className="source-tabs" role="tablist" aria-label="Documentos que explican el hallazgo">{sources.map((item, i) => <button key={item.label} type="button" role="tab" id={`source-tab-${i}`} aria-controls="source-excerpt" aria-selected={tab === i} tabIndex={tab === i ? 0 : -1}
+      onClick={() => setTab(i)} onKeyDown={event => {
+        const next = event.key === 'ArrowRight' ? (tab + 1) % sources.length : event.key === 'ArrowLeft' ? (tab + sources.length - 1) % sources.length : event.key === 'Home' ? 0 : event.key === 'End' ? sources.length - 1 : null
+        if (next !== null) { event.preventDefault(); setTab(next); event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('button')[next]?.focus() }
+      }}>{item.label}</button>)}</div> : null}
+    <article id="source-excerpt" className="source-paper" role={sources.length > 1 ? 'tabpanel' : undefined} aria-labelledby={sources.length > 1 ? `source-tab-${tab}` : undefined} tabIndex={sources.length > 1 ? 0 : undefined} key={tab}><p className="document-label"><FileText size={20} aria-hidden />{source.reference}</p><h4>{guided ? 'Cambio de tarifa' : source.label}</h4><blockquote><SourceText text={source.text} phrases={source.highlights} /></blockquote><p className="caption">{source.index ? 'Vista de los datos ficticios del índice' : 'Extracto del caso ficticio'}</p></article>
+    <div className="source-explanation"><p className="document-label">Por qué se marcó</p><p>{sourceReasons[finding]}</p><p className="human-line"><UserRound size={20} aria-hidden />Vos decidís qué corregir o consultar.</p></div></div>
+    <footer className="dialog-footer">{guided ? <PrimaryLink to="overview" label="Ver el producto" onClick={() => trackEvent('guide_complete')} /> : <button type="button" className="btn btn-primary" onClick={onClose}>Volver al hallazgo<ArrowLeft size={20} aria-hidden /></button>}</footer>
+  </ProductDialog>
+}
+
+function Summary() {
+  return <section className="summary-screen screen-layout" aria-labelledby="screen-title"><div className="screen-copy"><p className="eyebrow">Una revisión antes del envío</p><h1 id="screen-title" tabIndex={-1}>Encontrá.<br />Entendé.<br />Decidí.</h1><p className="lead">Menos búsqueda entre archivos. Más claridad sobre qué necesita revisión humana.</p></div>
+    <div className="summary-visual"><ol className="summary-steps"><li><TriangleAlert size={24} aria-hidden /><div><strong>Encontrá.</strong><p>Qué no cierra.</p></div></li><li><FileText size={24} aria-hidden /><div><strong>Entendé.</strong><p>De dónde sale.</p></div></li><li><UserRound size={24} aria-hidden /><div><strong>Decidí.</strong><p>Qué corregir o consultar.</p></div></li></ol><ContextPhoto kind="mine" className="summary-photo" /></div></section>
+}
+
+function TrialContact() {
+  return <section className="contact-screen screen-layout" aria-labelledby="screen-title"><div className="screen-copy"><p className="eyebrow">Una conversación · un caso</p><h1 id="screen-title" tabIndex={-1}>Probémoslo con un EDP.</h1><p className="lead">Podemos empezar con tu plantilla sin datos sensibles. No hace falta reemplazar tu ERP para probarlo.</p><ContextPhoto kind="review" className="contact-photo" /><p className="caption photo-disclosure">La fotografía muestra el contexto de trabajo; no es el equipo ni un cliente de EDP Control.</p></div>
+    <div className="founder-area"><h2>Lo vemos directamente conmigo.</h2><div className="founder-byline"><span className="founder-initials" aria-hidden>IK</span><div><strong>Ignacio Kairuz</strong><p>Automatizaciones y sistemas de datos</p></div></div>
+      <p>Cruzo información y encuentro diferencias. Con EDP Control quiero aplicar ese enfoque a revisar Estados de Pago antes de presentarlos.</p><p>Para empezar no hace falta implementar un sistema. Vemos un caso y comprobamos si realmente te ahorra trabajo.</p>
+      <div className="contact-action"><WhatsAppAction source="contact" large /><div><p>Escribime. Lo vemos juntos.</p><span>WhatsApp · mensaje editable</span></div></div>
+      <ContactLink source="contact" channel="calendar" className="quiet-action">Agendar 20 minutos</ContactLink><p className="caption">El tratamiento de datos se acuerda antes del piloto.</p><RouteLink to="faq" className="quiet-action">¿Tenés una pregunta?<ArrowRight size={18} aria-hidden /></RouteLink>
+    </div></section>
+}
+
+function FAQ() {
+  const [open, setOpen] = useState<number | null>(null)
+  return <section className="faq-screen screen-layout" aria-labelledby="screen-title"><div className="screen-copy"><p className="eyebrow">Preguntas frecuentes</p><h1 id="screen-title" tabIndex={-1}>Lo necesario para empezar.</h1><p className="lead">Después del ejemplo, resolvemos las dudas para probar un caso.</p></div><div className="faq-list">{storyFaq.map((item, i) => <section className="faq-item" key={item.question}><h2><button type="button" aria-expanded={open === i} aria-controls={`faq-answer-${i}`} onClick={() => setOpen(open === i ? null : i)}>{item.question}<span aria-hidden>{open === i ? '−' : '+'}</span></button></h2><div id={`faq-answer-${i}`} className="faq-answer" hidden={open !== i}><p>{item.answer}</p></div></section>)}</div></section>
+}
+
+function PackagePanel({ neutral = false, onClose }: { neutral?: boolean; onClose: () => void }) {
+  return <ProductDialog title={neutral ? 'Controles mostrados' : 'Paquete del ejemplo'} onClose={onClose}><div className="package-content"><p className="eyebrow">Caso ficticio · agosto 2026</p>{neutral ? <><h3>Sin diferencias en estos controles.</h3><p>Las líneas 05–08 coinciden en precio con el Anexo A de OS-2407 y en cantidad con Partes_Agosto.csv.</p><ul className="neutral-lines">{syntheticCase.edp.lines.slice(4).map((line, i) => <li key={line.lineId}><Check size={20} aria-hidden /><span>{line.lineId} · {lineNames[i + 4]}<small>{line.quantityPeriod} {line.unit} × {money(line.unitPrice)}</small></span></li>)}</ul><p>No se revisan acumulados, impuestos, retenciones ni la calidad técnica del trabajo en esta demostración.</p></> : <><h3>Qué entra a la revisión.</h3><p>Un EDP, lo acordado y los respaldos del período.</p><ul className="package-files"><li><FileSpreadsheet size={20} aria-hidden /><span>{syntheticCase.edp.fileName}<small>EDP-02 · revisión 0 · 8 líneas</small></span></li>{syntheticCase.documents.map(doc => <li key={doc.id}><FileText size={20} aria-hidden /><span>{doc.name}<small>{doc.id}{'count' in doc ? ' · 4 fotografías agrupadas' : ''}</small></span></li>)}</ul></>}<p className="context-note">Los resultados están preparados para mostrar el flujo. Verlos no aprueba ni modifica el EDP.</p></div><footer className="dialog-footer"><button type="button" className="btn btn-primary" onClick={onClose}>Volver al ejemplo<ArrowLeft size={20} aria-hidden /></button></footer></ProductDialog>
 }
 
 export function CommercialPage() {
+  const [screen, setScreen] = useState<Screen>(() => screenForHash(window.location.hash))
+  const [menu, setMenu] = useState(false)
+  const [source, setSource] = useState<FindingScreen | null>(null)
+  const [extra, setExtra] = useState<'package' | 'neutral' | null>(null)
+  const [understood, setUnderstood] = useState(() => {
+    const initial = screenForHash(window.location.hash)
+    return initial === 'source' || isFinding(initial) || ['summary', 'contact'].includes(initial)
+  })
+  const firstRender = useRef(true)
   const { openPrivacy } = usePrivacy()
-  return <><a href="#contenido" className="skip-link">Saltar al contenido</a><div id="top"><Navigation /><main id="contenido" tabIndex={-1}><Hero /><Example /><Workflow /><Scope /><Trial /><Faq /><Founder /><Methodology /></main><footer className="site-footer"><div className="wrap-wide footer-row"><div><strong>EDP Control · por Ignacio Kairuz</strong><p>Proyecto independiente.</p></div><nav aria-label="Contacto y detalles"><ContactLink source="footer" channel="email" className="footer-link">Email</ContactLink><ContactLink source="footer" className="footer-link">WhatsApp</ContactLink><a href={contact.linkedinUrl} target="_blank" rel="noopener noreferrer">LinkedIn</a><button type="button" onClick={openPrivacy}><LockKeyhole size={16} aria-hidden />Qué pasa con los archivos</button><a href="#metodologia">Cómo está hecho el ejemplo</a></nav></div></footer></div></>
+  const go = useCallback((next: Screen) => { window.location.hash = screenHashes[next] }, [])
+  const closeSource = useCallback(() => { if (screen === 'source') go('compare'); else setSource(null) }, [screen, go])
+
+  useEffect(() => {
+    const sync = () => {
+      const next = screenForHash(window.location.hash)
+      setScreen(next); setMenu(false); setSource(null); setExtra(null)
+      if (next === 'source' || isFinding(next) || ['summary', 'contact'].includes(next)) setUnderstood(true)
+    }
+    window.addEventListener('hashchange', sync)
+    return () => window.removeEventListener('hashchange', sync)
+  }, [])
+  useEffect(() => {
+    if (firstRender.current) { firstRender.current = false; return }
+    const frame = requestAnimationFrame(() => { if (screen !== 'source') { document.getElementById('screen-title')?.focus({ preventScroll: true }); window.scrollTo({ top: 0, behavior: 'instant' }) } })
+    return () => cancelAnimationFrame(frame)
+  }, [screen])
+
+  const guided = storyScreens.includes(screen)
+  const blockedByDialog = menu || source !== null || extra !== null || screen === 'source'
+  const showWhatsApp = understood && !blockedByDialog && ['overview', 'summary', 'faq'].includes(screen)
+  const page = screen === 'source' ? 'compare' : screen
+  let view
+  switch (page) {
+    case 'hero': view = <Hero />; break
+    case 'edp': view = <EdpExplanation />; break
+    case 'sources': view = <SourcesExplanation />; break
+    case 'compare': view = <Comparison />; break
+    case 'overview': view = <ProductOverview onPackage={() => setExtra('package')} onNeutral={() => setExtra('neutral')} />; break
+    case 'summary': view = <Summary />; break
+    case 'contact': view = <TrialContact />; break
+    case 'faq': view = <FAQ />; break
+    default: view = isFinding(page) ? <FindingDetail screen={page} onSource={() => { setSource(page); setUnderstood(true); trackEvent('source_open', { finding: page }) }} /> : <Hero />
+  }
+
+  const bottom = page === 'edp' ? { previous: 'hero', next: 'sources', label: 'Siguiente' } : page === 'sources' ? { previous: 'edp', next: 'compare', label: 'Comparar' } : page === 'compare' ? { previous: 'sources', next: 'source', label: 'Ver de dónde sale' } : page === 'overview' ? { previous: 'hero', next: 'summary', label: 'Así de simple' } : page === 'summary' ? { previous: 'overview', next: 'contact', label: 'Probémoslo con un EDP' } : page === 'faq' ? { previous: 'contact', next: 'contact', label: 'Probar con un EDP' } : null
+
+  return <div className={`product-story page-${page}`}>
+    <a className="skip-link" href="#screen-title" onClick={event => { event.preventDefault(); document.getElementById('screen-title')?.focus() }}>Saltar al contenido</a>
+    <header className="site-header"><div className="site-container header-row"><RouteLink to="hero" className="brand" ><strong>EDP</strong><span>CONTROL</span></RouteLink>{guided ? <RouteLink to="hero" className="quiet-action">Salir</RouteLink> : <button type="button" className="quiet-action" aria-haspopup="dialog" aria-expanded={menu} onClick={() => setMenu(true)}>Menú<Menu size={20} aria-hidden /></button>}</div></header>
+    <main className="site-container main-content" key={page}>{guided ? <div className="story-progress"><span>{steps[screen as keyof typeof steps]} / 5</span><RouteLink to="overview" className="quiet-action">Ver el producto<ArrowRight size={16} aria-hidden /></RouteLink></div> : null}{view}</main>
+    {bottom ? <footer className={`screen-footer ${showWhatsApp ? 'with-whatsapp' : ''}`}><div className="site-container screen-footer-row"><RouteLink to={bottom.previous as Screen} className="quiet-action back-link"><ArrowLeft size={18} aria-hidden />Volver</RouteLink><PrimaryLink to={bottom.next as Screen} label={bottom.label} />{showWhatsApp ? <WhatsAppAction source={screen} /> : null}</div></footer> : null}
+    {!guided ? <footer className="site-meta site-container"><span>EDP Control · Ignacio Kairuz</span><nav aria-label="Información"><RouteLink to="faq">Preguntas</RouteLink><button type="button" onClick={openPrivacy}>Datos y privacidad</button></nav></footer> : null}
+    {menu ? <ProductDialog title="Menú" className="menu-dialog" onClose={() => setMenu(false)}><nav className="menu-links" aria-label="Navegación principal">{[{ to: 'edp', label: 'Cómo funciona' }, { to: 'overview', label: 'Ver el ejemplo' }, { to: 'contact', label: 'Probar con un EDP' }, { to: 'faq', label: 'Preguntas frecuentes' }].map(link => <RouteLink key={link.to} to={link.to as Screen} onClick={() => setMenu(false)}>{link.label}<ArrowRight size={22} aria-hidden /></RouteLink>)}</nav><p className="caption menu-note">Una revisión antes del envío. La decisión sigue con tu equipo.</p></ProductDialog> : null}
+    {screen === 'source' || source ? <SourcePanel key={screen === 'source' ? 'guided' : source} finding={screen === 'source' ? 'price' : source!} guided={screen === 'source'} onClose={closeSource} /> : null}
+    {extra ? <PackagePanel neutral={extra === 'neutral'} onClose={() => setExtra(null)} /> : null}
+    <span className="sr-only" aria-live="polite">{guided ? `Explicación, paso ${steps[screen as keyof typeof steps]} de 5.` : screen === 'overview' ? 'Ejemplo con ocho líneas y cuatro para revisar.' : ''}</span>
+  </div>
 }
